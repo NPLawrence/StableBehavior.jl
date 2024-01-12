@@ -71,7 +71,7 @@ function (hook::EpisodeIO)(::PostExperimentStage, agent, env)
     ylims!(plt[2], (minimum(vcat(hook.output...)), maximum(vcat(hook.output...))))
     anim = @animate for (u,y) in zip(hook.input[1:2:end], hook.output[1:2:end])
         plot!(plt[1], u, label="", ylabel="Control input")
-        plot!(plt[2], y, label="", ylabel="Tank level", xlabel="Time")
+        plot!(plt[2], y, label="", ylabel="Process output", xlabel="Time")
     end
     gif(anim, fps=5)
     println(p)
