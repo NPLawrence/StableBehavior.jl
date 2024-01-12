@@ -200,34 +200,6 @@ function Hankel_YK_controller_stable(Qinputs, Qoutputs, state_Q=nothing, Q=nothi
     # function YK_controller(input, states_YK, X=nothing, Y=nothing, N=nothing, D=nothing, Q=nothing)
 
 
-        # Take tracking error from system, advance Hankel trajectory, add output to generate input to YK parameter
-        # H_u = H_matrix(pe_u[1:end-1], L)
-        # H_y = H_matrix(pe_y[1:end-1], L)
-        # H_u_full = H_matrix(pe_u, L+1)
-        # H_y_full = H_matrix(pe_y, L+1)
-        # y_complete = complete_prediction(u_traj[end-L+1:end], y_traj[end-L+1:end], H_u, H_y_full, H_y)
-        # y_traj = [y_traj[2:end]; y_complete[end]]
-
-        # input = error .+ y_traj[end]
-
-        # Get output of Q dynamics and advance state
-        # state_Q == nothing ? state_Q = zeros(size(Q.A,1), 1) : state_Q = state_Q
-        # state_Q = Q.A*state_Q + Q.B*input_prev
-        # q = Q.C*state_Q + Q.D*input # (to write the state update before the output, we need input and input_prev
-                                    # -- this is so we can optimize A, B w.r.t q)
-
-        # Produce next control action
-        # u = q
-
-
-        # A Hankel representation of the Q-parameter
-        # input_vec = vec([1; 1; 1; 1; 1; 0; 0; 0; 0])
-        # u_vec = vec([Q.D; Q.C*Q.B + Q.D; Q.C*Q.A*Q.B + Q.C*Q.B + Q.D; Q.C*Q.A^2*Q.B + Q.C*Q.A*Q.B + Q.C*Q.B + Q.D;
-        #     Q.C*Q.A^3*Q.B + Q.C*Q.A^2*Q.B + Q.C*Q.A*Q.B + Q.C*Q.B + Q.D;
-        #     Q.C*Q.A^4*Q.B + Q.C*Q.A^3*Q.B + Q.C*Q.A^2*Q.B + Q.C*Q.A*Q.B + Q.C*Q.B;
-        #     Q.C*Q.A^5*Q.B + Q.C*Q.A^4*Q.B + Q.C*Q.A^3*Q.B + Q.C*Q.A^2*Q.B + Q.C*Q.A*Q.B;
-        #     Q.C*Q.A^6*Q.B + Q.C*Q.A^5*Q.B + Q.C*Q.A^4*Q.B + Q.C*Q.A^3*Q.B + Q.C*Q.A^2*Q.B;
-        #     Q.C*Q.A^7*Q.B + Q.C*Q.A^6*Q.B + Q.C*Q.A^5*Q.B + Q.C*Q.A^4*Q.B + Q.C*Q.A^3*Q.B])
 
         input_vec, u_vec = SS_signal(Q.A, Q.B, Q.C, Q.D)
         n_q = size(Q.A,1)
@@ -285,48 +257,4 @@ function YK_controller(input, states_YK, X=nothing, Y=nothing, N=nothing, D=noth
 
     return u, n, states_YK
 
-end
-
-
-## IGNORE - may revisit
-
-function smooth_Hankel(u, y, L)
-    H_u = H_matrix(u, L)
-    H_y = H_matrix(y, L)
-    delta = Variable(size(y))
-    # alpha = Variable(length(y)-L+1,1)
-    set_value!(delta, randn(size(delta)))
-    # set_value!(alpha, randn(size(alpha)))
-
-    f(x) = var_H(x,L)
-    g(x) = var_trajectory(u[end-L+1:end], y[end-L+1:end], H_u, f(x+y),2)
-    loss = norm(delta,1)
-
-    problem = minimize(loss + g(delta));
-    solve!(problem, () -> ECOS.Optimizer(verbose=true));
-    # model = Model(solver=Mosek.MosekSolver())
-    # @variable(model, delta[size(y)])
-    # # @variable(model, alpha)
-    # # @objective(model, Min, norm(delta,1) + 0.1*is_trajectory(u, y, H_u, H_matrix(y+delta, L),p=2) )
-    # @NLobjective(model, Min, sum(abs.(delta)))
-    #
-    # # @show value(delta)
-    #
-    # optimize!(model)
-    # objective_value(model)
-    evaluate(delta)
-end
-
-function var_H(u, L)
-    H = zeros(L, length(u)-L+1)
-    u_val = evaluate(u)
-    for i = 1:L
-        H[i,:]=u_val[i:length(u_val)-L+i]
-    end
-    return H
-end
-
-function var_trajectory(u, y, H_u, H_y,p=1)
-    alpha = lsmr([H_u; H_y], [u; y], λ = 10)
-    return norm([H_u; H_y]*alpha - [u; y], p)^p + norm(alpha,2)^2
 end

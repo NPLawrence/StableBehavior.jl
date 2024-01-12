@@ -7,8 +7,6 @@ using IntervalSets
 using ControlSystems
 using Distributions, Random
 
-include("../Hankel.jl")
-
 struct LTIEnvPIDParams{T}
     sys::StateSpace{ControlSystems.Discrete{T}, T}
     max_steps::Int
@@ -24,7 +22,6 @@ Base.show(io::IO, env_params::LTIEnvPIDParams) = print(
 
 function LTIEnvPIDParams(;
     T = Float64,
-    # sys = ss(c2d(tf(1,[2.,1])^2*tf(1,[0.5,1]), 0.5)),
     sys = ss(c2d(tf([-1, 1],[1, 3, 3, 1]), 0.5)),
     max_steps = 200,
     L = 4,
@@ -72,7 +69,6 @@ end
 """
 function LTIEnvPID(;
     T = Float64,
-    # sys = ss(c2d(tf(1,[2.,1])^2*tf(1,[0.5,1]), 0.5)),
     sys = ss(c2d(tf([-1, 1],[1, 3, 3, 1]), 0.5)),
     max_steps = 200,
     rng = Random.GLOBAL_RNG,
@@ -83,7 +79,6 @@ function LTIEnvPID(;
     var = 0.01,
 )
     env_params = LTIEnvPIDParams(T=T, sys=sys, max_steps=max_steps, L=L, N=N, L_q=L_q)
-    # action_space = Space(ClosedInterval{T}.(repeat([-10], size(sys.B,2) + L_q),repeat([10], size(sys.B,2) + L_q)), )
     action_space = -10.0..10.0
 
     low = repeat([typemin(T)], 3)
@@ -92,14 +87,13 @@ function LTIEnvPID(;
         ClosedInterval{T}.(low, high),
     )
 
-    pe_u = PE_signal(L+1,N; m=size(sys.B,2))
-    # pe_y, t, x = lsim(sys,pe_u', 0:sys.Ts:sys.Ts*(length(pe_u)-1))
+    pe_u = excite(L+1, num_data=N, m=size(sys.B,2))
     pe_y = lsim(sys, pe_u').y .+ var*randn(size(pe_u'))
 
-    H_u = H_matrix(vec(pe_u[1:end-1]), L)
-    H_y = H_matrix(vec(pe_y[1:end-1]), L)
-    H_u_full = H_matrix(vec(pe_u[2:end]), L)
-    H_y_full = H_matrix(vec(pe_y[2:end]), L)
+    H_u = Hankel(vec(pe_u[1:end-1]), L)
+    H_y = Hankel(vec(pe_y[1:end-1]), L)
+    H_u_full = Hankel(vec(pe_u[2:end]), L)
+    H_y_full = Hankel(vec(pe_y[2:end]), L)
     H_inv = pinv([H_u; H_y])
     U = zeros(L^2 - 1)
     Y = zeros(L^2 - 1)
@@ -143,9 +137,7 @@ function RLBase.reset!(env::LTIEnvPID{A,T}) where {A,T}
     env.state[:] = zeros(T, 3, 1)
     env.x[:] = zeros(T, size(env.env_params.sys.A,1))
 
-    # env.state[env.env_params.L_q] = env.sp # needed to initialize the Qinput values: we assume system starts at steady state with output = Hankel_output  Qinput starts at such that sp - output + predicted_output = sp
     env.t = 0
-    # env.action = rand(env.rng, env.action_space)
     env.action = 0.0
     env.sp = rand([2.0, -2.0])
     env.U = zeros(env.env_params.L^2 - 1)
@@ -173,9 +165,8 @@ function _step!(env::LTIEnvPID, a)
 
     env.x = env.env_params.sys.A*env.x + vec(env.env_params.sys.B*a)
     y = dot(env.env_params.sys.C, env.x) + env.var*randn() # assume no D matrix
-    # y = env.env_params.sys.C*env.x # assume no D matrix
 
-    track_error = env.sp - y[1] # TODO : Better way of encoding the reference signal
+    track_error = env.sp - y[1]
 
     # state has the form (Δe, Δt e, u_prev)
     Ts = env.env_params.sys.Ts

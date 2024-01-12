@@ -10,7 +10,6 @@ using RollingFunctions
 
 include("policies/stableMatrices.jl")
 
-
 # persistently exciting input data (simple)
 function excite(L::Int; num_data::Int=100, m::Int=1)
     num_data = max((m+1)*L , num_data)
@@ -55,7 +54,6 @@ function closed_loop_trajectory(C, steps, H_u, H_y, H_y_init; λ::Float64=0, r="
     U = Any[]
     Y = Any[]
     x_c = zeros(size(C.B))
-#     x_p = zeros(size(Pss.B))
     ν = size(H_y_init, 1)
     u_traj = zeros(ν)
     y_traj = zeros(ν)
@@ -68,8 +66,6 @@ function closed_loop_trajectory(C, steps, H_u, H_y, H_y_init; λ::Float64=0, r="
 
     for i in 1:steps
     
-    #     x_p = Pss.A*x_p + Pss.B*u
-    #     y = dot(Pss.C,x_p)
     
         # update the input trajectory
         append!(u_traj, u)
@@ -95,23 +91,17 @@ end
 
 # Add method to complete_trajectory
 function complete_trajectory(u, y_init, H_u, H_y, H_y_init, λ::Float64; solver="back")
-
-#     α = lsmr([H_u; H_y_init], [u; y_init], λ=λ)
-    
-    # α = [H_u; H_y_init; λ*I(size(H_u,2))]\[u; y_init; zeros(size(H_u,2))]
     α = Hankel_solver([H_u; H_y_init; λ*I(size(H_u,2))], [u; y_init; zeros(size(H_u,2))], solver = solver)
     y = H_y*α
 end
 
 function complete_trajectory(u, y_init, H_y, A)
-
     α = A * [u; y_init]
     y = H_y*α
-
 end
+
 function noisy_trajectory(P::StateSpace{ControlSystems.Discrete{T}}; order::Int=10, num_data::Int=100, σ²::Float64=0.01) where T
 
-    # u = excite(order, num_data=num_data)
     u = excite(order, num_data=num_data)
     x = zeros(size(P.B))
     y = Float64[]
@@ -122,7 +112,7 @@ function noisy_trajectory(P::StateSpace{ControlSystems.Discrete{T}}; order::Int=
         x = P.A*x + P.B*u[i]
         
     end
-    
+
     return vec(u), vec(y)
 end
 
@@ -145,11 +135,6 @@ function get_rand_trajectory(H_u, H_y, H_y_init, steps; λ::Float64=0.0, solver=
 
     while length(Y)+L-ν <= steps
 
-        # println(size(U[length(Y)-ν+1:length(Y)+L-ν]))
-        # println(size(Y[end-ν+1:end]))
-        # println(size(H_u))
-        # println(size(H_y))
-        # println(size(H_y_init))
         if λ!=0.0
             y_complete = complete_trajectory(U[length(Y)-ν+1:length(Y)+L-ν], Y[end-ν+1:end], H_u, H_y, H_y_init, λ, solver=solver)
         else
@@ -195,19 +180,8 @@ function get_rand_trajectory(u, y, L::Int, steps::Int, P, σ²; K::Int = 1, λ::
 end
 
 function complete_prediction(u, y_init, H_u, H_y, H_y_nu)
-    # alpha = [H_u; H_y_nu]\[u; y_init]
-    # E = [H_u; H_y_nu]
-    # A = [H_u[2:end,:]; reshape(-0.1*H_y[end,:], (1, length(H_y[end,:]))); H_y_nu[2:end,:]; reshape(H_y[end,:], (1, length(H_y[end,:])))]
 
-    # println(norm.(eigvals(E'*A, E'E)))
-
-    # alpha = lsmr([H_u; H_y_nu], [u; y_init], λ = 0.10) # TODO this doesn't return trivial solution when RHS is zero
-
-    # α = qr([H_u; H_y_nu]'*[H_u; H_y_nu], Val(true)) \ [H_u; H_y_nu]'*[u; y_init]
     α = [H_u; H_y_nu]\[u; y_init]
-    # α = [H_u; H_y_nu; 0.1*I(size(H_u,2))]\[u; y_init; zeros(size(H_u,2))]
-    # y = H_y*alpha
-    # println(typeof(H_y[end:end,:]*alpha))
     y = H_y[end:end,:]*α
 
 end
@@ -221,16 +195,6 @@ function YK_trajectory(Q, H_u, H_y, H_y_init, input)
     y = 0
     x_c = zeros(size(Q.B))
 
-    # for r in input
-    #     u = dot(Q.C,x_c) + dot(Q.D,r)
-    #     x_c = vec(Q.A*x_c) .+ vec(Q.B*r)
-    # end
-    # append!(u_traj, u)
-    # popfirst!(u_traj)
-
-    # y_traj = complete_trajectory(u_traj, y_traj, H_u, H_y, H_y_init)
-
-
     for r in input
     
         # update the input trajectory
@@ -241,7 +205,6 @@ function YK_trajectory(Q, H_u, H_y, H_y_init, input)
         append!(y_traj, y)
         popfirst!(y_traj)
         
-        # println(dot(Q.B,r))
         u = dot(Q.C,x_c) + dot(Q.D,r)
         x_c = vec(Q.A*x_c) .+ vec(Q.B*r)
         
@@ -251,7 +214,12 @@ function YK_trajectory(Q, H_u, H_y, H_y_init, input)
 
 end
 
-# p_A(p) = reshape(p[1:ν^2], (ν, ν))
+
+
+"""
+The rest of this is a bunch of random code from earlier experiments that didn't make it into the paper
+"""
+
 p_A(p) = stableMat(reshape(p[1:ν^2], (ν, ν)))
 
 p_B(p) = reshape(p[ν^2 + 1: ν^2 + ν], (ν, 1))
@@ -304,10 +272,7 @@ function (traj_Q::Traj)(Q, Pd)
     ŷ = 0
     for (i,u) in enumerate(u_traj[size(H_u_init,1)+1:end])
 
-        # ŷ = Hankel_ensemble(u_traj[i+1:i+size(H_u_init,1)], y_traj[end-size(H_y_init,1)+1:end], u_P, y_P, 2, ν)
-        # ŷ = dot(H_y[end:end,:], [H_u_init; H_y_init] \ vcat(u_traj[i+1:i+size(H_u_init,1)], y_traj[end-size(H_y_init,1)+1:end]))
         ŷ = dot(H_y[end:end,:], H_pinv * vcat(u_traj[i+1:i+size(H_u_init,1)], y_traj[end-size(H_y_init,1)+1:end]))
-        # ŷ = dot(H_y[end:end,:], [H_u_init; H_y_init; 10.0*I(size(H_u_init,2))] \ vcat(u_traj[i+1:i+size(H_u_init,1)], y_traj[end-size(H_y_init,1)+1:end], zeros(size(H_u_init,2))))
 
         append!(y_traj,ŷ)
     end
@@ -321,7 +286,6 @@ end
 function constraintfun(p)
 
     svd(p_A(p)).S .- 1.0
-    # [opnorm(p_A(p), Inf) - 1.0]
     
 end
 

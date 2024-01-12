@@ -27,7 +27,7 @@ struct nonnegDense{F, M<:AbstractMatrix}
 end
   
 function nonnegDense(in::Integer,out::Integer, σ = identity;
-                init = Flux.kaiming_uniform)
+                init = Flux.glorot_uniform)
     nonnegDense(init(out, in), σ)
 end
   

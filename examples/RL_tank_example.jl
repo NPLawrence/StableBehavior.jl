@@ -4,7 +4,7 @@ using Flux
 using Flux.Losses
 using ControlSystems
 using Distributions, Random
-using Flux: kaiming_normal
+using Flux: glorot_uniform, kaiming_normal
 using Flux: params # BREAKING Flux >/ 0.13.0 doesn't seem to use `params()` anymore, causing issues with ReinforcementLearning.jl
 using BSON
 using BSON: @save, @load
@@ -38,7 +38,7 @@ function Tank_Experiment(;
     )
 
     ns = length(state(inner_env))
-    init = kaiming_normal(rng)
+    init = glorot_uniform(rng)
 
     create_actor() = stable_policy(n_q, n_q+4, 16, 2) |> gpu
     # create_actor() = Chain(
@@ -94,7 +94,7 @@ function Tank_Experiment(;
         ),
     )
 
-    stop_condition = StopAfterEpisode(100 , is_show_progress=!haskey(ENV, "CI"))
+    stop_condition = StopAfterEpisode(100, is_show_progress=!haskey(ENV, "CI"))
     total_reward_per_episode = TotalRewardPerEpisode()
     episode_io = EpisodeIO()
     Q_state = YK_state()

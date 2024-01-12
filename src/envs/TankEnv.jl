@@ -7,7 +7,6 @@ using IntervalSets
 using ControlSystems
 using Distributions, Random
 
-include("../Hankel.jl")
 include("TankDynamics.jl")
 
 """
@@ -23,7 +22,6 @@ struct TankEnvParams{T}
     N::Int
     L_q::Int
 end
-
 
 Base.show(io::IO, env_params::TankEnvParams) = print(
     io,
@@ -104,15 +102,15 @@ function TankEnv(;
         ClosedInterval{T}.(low, high),
     )
 
-    probe_u = sign.(PE_signal(L+1,N; m=1))
+    probe_u = sign.(excite(L+1, num_data=N, m=1))
     pe_u, pe_y = tank_probe(sys, probe_u)
     sys.level_sp=sp
     reset(sys)
 
-    H_u = H_matrix(vec(pe_u[1:end-1]), L)
-    H_y = H_matrix(vec(pe_y[1:end-1]), L)
-    H_u_full = H_matrix(vec(pe_u[2:end]), L)
-    H_y_full = H_matrix(vec(pe_y[2:end]), L)
+    H_u = Hankel(vec(pe_u[1:end-1]), L)
+    H_y = Hankel(vec(pe_y[1:end-1]), L)
+    H_u_full = Hankel(vec(pe_u[2:end]), L)
+    H_y_full = Hankel(vec(pe_y[2:end]), L)
     H_inv = pinv([H_u; H_y])
     U = zeros(L^2 - 1)
     Y = zeros(L^2 - 1)

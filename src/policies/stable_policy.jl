@@ -25,7 +25,7 @@ function ReHU(x)
     max.(x.-d/2, clamp.(sign.(x).*x.^2 ./ (2*d),0.0,d/2.0))
 end
 
-function stable_policy(n::Integer, k::Integer, m::Integer, l::Integer; σ=tanh, init=Flux.kaiming_normal)
+function stable_policy(n::Integer, k::Integer, m::Integer, l::Integer; σ=tanh, init=Flux.glorot_uniform)
     layers = [ Dense(m, m, σ; init = init) for i in 1:l]
     f = Chain(vcat(Dense(n+k, m, σ; init = init), layers, Dense(m, n; init = init))...)
     V = ICNN(n, m, l, ReHU)

@@ -2,7 +2,7 @@
 
 Code for the experiments in "[Stabilizing reinforcement learning control: A modular framework for optimizing over all stable behavior](https://arxiv.org/abs/2310.14098)".
 
-![Alt text](/src/misc/anim.gif)
+![Alt text](/src/misc/anim1.gif)
 
 ## Installation
 Clone this repo, navigate to the directory in the Julia REPL, then type the commands:
