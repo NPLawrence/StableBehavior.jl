@@ -17,7 +17,6 @@ using ImageFiltering
 
 include("data_tools.jl")
 include("../policies/YK_param.jl")
-include("LTIEnv.jl")
 
 trueBlues = ColorScheme([colorant"white"; ColorSchemes.Blues.colors])
 # redblue = ColorScheme([reverse(ColorSchemes.Reds.colors); colorant"white"; colorant"white"; ColorSchemes.Blues.colors])

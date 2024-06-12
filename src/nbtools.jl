@@ -445,16 +445,6 @@ function f_RL(p::Vector, grad::Vector=[])
 end
 
 
-# function runopt(p; f_tol = 1e-5, x_tol = 1e-3, c_tol=1e-8)
-#     # opt = Opt(:LD_MMA, d)
-#     opt = Opt(:LD_SLSQP, d)
-#     # opt.lower_bounds = 1e-6ones(d)
-#     opt.xtol_rel = x_tol
-#     opt.ftol_rel = f_tol
-#     opt.min_objective = f
-#     # inequality_constraint!(opt, c, c_tol*ones(1))
-#     NLopt.optimize(opt, p)
-# end
 global iter_counter=[]
 
 function (runopt::OptTraj)(p; f_tol = 1e-5, x_tol = 1e-3, c_tol=1e-8, mode="static")
@@ -470,41 +460,3 @@ function (runopt::OptTraj)(p; f_tol = 1e-5, x_tol = 1e-3, c_tol=1e-8, mode="stat
     # inequality_constraint!(opt, runopt.c, c_tol*ones(runopt.ν))
     NLopt.optimize(opt, p), iter_counter
 end
-
-# function runopt_RL(p; f_tol = 1e-5, x_tol = 1e-3, c_tol=1e-8)
-#     # opt = Opt(:LD_MMA, d)
-#     opt = Opt(:LD_SLSQP, d)
-#     # opt.lower_bounds = 1e-6ones(d)
-#     opt.xtol_rel = x_tol
-#     opt.ftol_rel = f_tol
-#     opt.min_objective = f_RL
-#     inequality_constraint!(opt, c, c_tol*ones(ν))
-#     NLopt.optimize(opt, p)
-# end
-
-# function runopt(p, u, y, ν, P; f_tol = 1e-5, x_tol = 1e-3, c_tol=1e-8, mode="static")
-
-
-#     H_u = Hankel(vec(u), L)
-#     H_y = Hankel(vec(y), L)
-#     H_u_nu = Hankel(vec(u)[1:length(u) - L + ν], ν)
-#     H_y_nu = Hankel(vec(y)[1:length(y) - L + ν], ν)
-
-#     timedomain(p) = traj_Q(Q_param(p), H_u_nu, H_y, H_y_nu, Pd)
-
-#     return runopt(p; f_tol = f_tol, x_tol = x_tol, c_tol=c_tol, mode=mode)
-# end
-
-
-
-# function (runopt::OptTraj)(p; f_tol = 1e-5, x_tol = 1e-3, c_tol=1e-8, mode="static")
-#     # timedomain = runopt.timedomain
-#     # constraintfun = runopt.constraintfun
-#     # c = runopt.c
-#     # cost = runopt.cost
-#     # f = runopt.f
-#     # runopt = runopt.runopt
-
-#     runopt.runopt(p)
-
-# end
