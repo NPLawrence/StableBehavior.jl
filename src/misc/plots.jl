@@ -47,60 +47,6 @@ function getSS(policy::YK_param_stable)
 
 end
 
-
-function plot_env(env::LTIEnv, policy; kwargs...)
-    gr()
-    reset!(env)
-    max_steps = env.env_params.max_steps
-    Ts = env.env_params.sys.Ts
-
-    p0 = plot(
-        xlims=(0, env.env_params.max_steps),
-        legend=true,
-    )
-
-    ## Plot
-    outputs = Any[]
-    for i in 1:max_steps
-        a = policy(state(env))[]
-
-        env(a)
-
-        y = env.Y[end]
-        append!(outputs, y)        
-    end
-
-    A, B, C, D = getSS(policy)
-    
-    Q = ss(A,B,C,D,Ts)
-
-    C_Q = Q*feedback(1, -env.env_params.sys*Q)
-    CL_Q = feedback(C_Q*env.env_params.sys)
-
-    tf_y, tf_t, tf_x = lsim(CL_Q, (x,i)-> 1, 0:Ts:Ts*(max_steps-1))
-
-    println("Q plot ", Q)
-    println("eig A ", eigvals(A))
-    println("Terminal reward: ", reward(env))
-
-    plot!(p0, 0:max_steps-1, outputs, label="Hankel", linetype=:step)
-    plot!(p0, 0:max_steps-1, tf_y', label="TF", linestyle=:dash, linetype=:step)
-    plot!([1], seriestype = :hline, label="setpoint", color="orange", title="Closed-loop output")
-
-    tf_inputs, tf_t_inputs, tf_x_inputs = lsim(C_Q/(1 + C_Q*env.env_params.sys), (x,i)-> 1, 0:Ts:Ts*(max_steps-1))
-
-    p1 = plot(
-        xlims=(0, env.env_params.max_steps),
-        legend=false,
-        xlabel="Time steps"
-    )
-    plot!(p1, 0:max_steps-1, tf_inputs', linetype=:step, title="Closed-loop input")
-
-    p = plot(p0, p1, layout = (2,1))
-    display(p)
-
-end
-
 function make_GIF(df, name="testing")
 # makes GIF of training progress given a dataframe of rollouts
 
