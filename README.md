@@ -2,6 +2,8 @@
 
 Code for the experiments in "[Stabilizing reinforcement learning control: A modular framework for optimizing over all stable behavior](https://doi.org/10.1016/j.automatica.2024.111642)".
 
+The examples from the paper are [here](./examples) with supporting code under [src](./src).
+
 ![Alt text](/src/misc/anim1.gif)
 
 ## Installation
